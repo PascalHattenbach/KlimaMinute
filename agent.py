@@ -8,6 +8,33 @@ client = OpenAI()
 print("KlimaMinute ist bereit.")
 print("Stelle eine Klimafrage oder schreibe 'ende' zum Beenden.\n")
 
+
+def zeige_quellen(antwort):
+    quellen = {}
+
+    for element in antwort.output:
+        if getattr(element, "type", "") != "message":
+            continue
+
+        for inhalt in element.content:
+            if getattr(inhalt, "type", "") != "output_text":
+                continue
+
+            for quelle in inhalt.annotations:
+                if getattr(quelle, "type", "") == "url_citation":
+                    titel = getattr(quelle, "title", "Quelle")
+                    url = getattr(quelle, "url", "")
+                    quellen[url] = titel
+
+    if quellen:
+        print("Quellen:")
+
+        for url, titel in quellen.items():
+            print(f"- {titel}: {url}")
+
+        print()
+
+
 while True:
     frage = input("Du: ").strip()
 
@@ -22,24 +49,31 @@ while True:
     try:
         antwort = client.responses.create(
             model="gpt-5-mini",
+            tools=[{"type": "web_search"}],
             instructions=(
                 "Du bist KlimaMinute, ein freundlicher Klima-Assistent. "
                 "Antworte auf Deutsch, sachlich und leicht verständlich. "
-                "Beschränke deine Antwort auf höchstens 150 Wörter. "
-                "Wenn du bei einer aktuellen Zahl unsicher bist, sage das offen. "
+                "Beschränke deine eigentliche Antwort auf höchstens 150 Wörter. "
+                "Nutze bei aktuellen Zahlen, Nachrichten oder Entwicklungen "
+                "die Websuche. Bevorzuge wissenschaftliche und offizielle Quellen. "
+                "Unterscheide klar zwischen gesicherten Fakten und Unsicherheit. "
                 "Beantworte ausschließlich Fragen zu Klima, Umwelt, Energie "
-                "und Nachhaltigkeit. Weise bei anderen Themen freundlich darauf hin."
+                "und Nachhaltigkeit."
             ),
             input=frage,
         )
 
-        print(f"\nKlimaMinute: {antwort.output_text}\n")
+        print(f"\nKlimaMinute:\n{antwort.output_text}\n")
+        zeige_quellen(antwort)
 
     except AuthenticationError:
         print("\nKlimaMinute: Der API-Key ist ungültig.\n")
 
     except RateLimitError:
-        print("\nKlimaMinute: Das API-Guthaben ist aufgebraucht oder die Anfragegrenze wurde erreicht.\n")
+        print(
+            "\nKlimaMinute: Das Guthaben ist aufgebraucht "
+            "oder die Anfragegrenze wurde erreicht.\n"
+        )
 
     except Exception as fehler:
         print(f"\nKlimaMinute: Es ist ein Fehler aufgetreten: {fehler}\n")
