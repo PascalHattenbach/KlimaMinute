@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI, AuthenticationError, RateLimitError
+from auth import zugang_erlaubt
 
 load_dotenv()
 
@@ -11,6 +12,8 @@ st.set_page_config(
     page_icon="🌍",
     layout="centered",
 )
+if not zugang_erlaubt():
+    st.stop()
 
 st.markdown(
     """
